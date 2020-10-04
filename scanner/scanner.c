@@ -3,6 +3,10 @@
  * @author Huu-Duc Nguyen
  * @version 1.0
  */
+#ifdef _MSC_VER
+#define _CRT_SECURE_NO_WARNINGS
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -134,40 +138,29 @@ Token *readConstChar(void)
     case CHAR_SINGLEQUOTE: // read ''
       // read next character
       readChar();
-      if (charCodes[currentChar] == CHAR_SINGLEQUOTE) // read ''' -> error
+      int current = 0;
+      while (charCodes[currentChar] != CHAR_SINGLEQUOTE && currentChar >= 0x20 && currentChar <= 0x7E) //printable chars
       {
-        // token->string[0] = currentChar;
-        // readChar();
-        // if (charCodes[currentChar] == CHAR_SINGLEQUOTE)
-        // {
-        //   token->string[1] = '\0';
-        //   readChar();
-        //   return token;
-        // }
-        // else
-        // {
-        error(ERR_INVALIDCHARCONSTANT, token->lineNo, token->colNo);
-        // }
-      }
-      else
-      {
-        token->string[0] = currentChar; //read char x
+        if (current >= MAX_STRING_LEN)
+          error(ERR_STRINGTOOLONG, token->lineNo, token->colNo);
+        token->string[current++] = currentChar;
         readChar();
-        if (charCodes[currentChar] == CHAR_SINGLEQUOTE) // read end '
+      }
+      if (charCodes[currentChar] == CHAR_SINGLEQUOTE) // read end '
+      {
+        readChar();
+        if (charCodes[currentChar] == CHAR_SINGLEQUOTE) // read ''
         {
+          token->string[current] = '\0';
           readChar();
-          if (charCodes[currentChar] == CHAR_SINGLEQUOTE) // read ''
-          {
-            token->string[1] = '\0';
-            readChar();
-            return token;
-          }
-          else
-            error(ERR_INVALIDCHARCONSTANT, token->lineNo, token->colNo);
+          return token;
         }
         else
           error(ERR_INVALIDCHARCONSTANT, token->lineNo, token->colNo);
       }
+      else
+        error(ERR_INVALIDCHARCONSTANT, token->lineNo, token->colNo);
+      //}
       break;
     default:
       // add the character to token string
