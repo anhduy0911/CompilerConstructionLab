@@ -1,0 +1,40 @@
+PROGRAM  MAX;  (* Example 4 *)
+TYPE T = INTEGER;
+VAR  A : ARRAY(. 10 .) OF T;
+     N : INTEGER;
+
+PROCEDURE INPUT;
+VAR I : INTEGER;
+BEGIN
+  N := READI;
+  FOR I := 1 TO N DO
+     A(.I.) := READI;
+END;
+
+FUNCTION MAX : INTEGER;
+VAR I: INTEGER;
+    M : INTEGER;
+BEGIN
+    M := A(.1.);
+    I := 1;
+    WHILE I <= N DO
+      BEGIN
+        IF M < A(.I.) THEN M := A(.I.); (* GET MAX *)
+        I := I + 1;
+      END
+    FOR I := 1 TO N DO
+      BEGIN
+        IF M = A(.I.) THEN
+          BEGIN
+            CALL WRITEI(I); (* PRINT INDEXES *)
+            CALL WRITELN;
+          END
+      END
+    MAX := M; (* RETURN MAX *)
+END;
+
+BEGIN
+  CALL INPUT;
+  CALL WRITEI(MAX);
+  CALL WRITELN;
+END.  (* MAX EXAMPLE *)

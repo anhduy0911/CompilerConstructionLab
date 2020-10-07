@@ -1,4 +1,10 @@
-''a''
-''hello''
-''''
-''a'
+Program Example1; (* Example 1 *)
+Var I:Integer;
+    C:Char;
+Begin
+  C := 'a';
+  C := ''This is a long long long string constant'';
+  C := '''';
+  C := ''a';
+  I := 10000000000000;
+End. (* Test *)

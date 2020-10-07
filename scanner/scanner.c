@@ -21,13 +21,15 @@ extern int currentChar;
 
 extern CharCode charCodes[];
 
+int state = 0;
 /***************************************************************/
 
 void skipBlank()
 {
   // TODO
-  while (currentChar != -1 && charCodes[currentChar] == CHAR_SPACE)
+  while (state == 1 && charCodes[currentChar] == CHAR_SPACE)
     readChar();
+  state = 0;
 }
 
 void skipComment()
@@ -37,26 +39,42 @@ void skipComment()
   {
     // read next character
     readChar();
+    switch (state)
+    {
+    case 3:
+      /* code */
+      break;
 
+    default:
+      break;
+    }
     if (currentChar == -1)
     {
       // end of file
+      state = 40;
       error(ERR_ENDOFCOMMENT, lineNo, colNo);
     }
     else if (charCodes[currentChar] == CHAR_TIMES)
     {
       // next is asterick character
+      state = 4;
       readChar();
       if (currentChar == -1)
       {
         // EOF
+        state = 40;
         error(ERR_ENDOFCOMMENT, lineNo, colNo);
       }
       else if (charCodes[currentChar] == CHAR_RPAR)
       {
         // next is right parentthesis
+        state = 5;
         readChar();
         return;
+      }
+      else if (charCodes[currentChar] != CHAR_TIMES)
+      {
+        state = 3;
       }
     }
   }
@@ -68,14 +86,15 @@ Token *readIdentKeyword(void)
   int count = 0;
   Token *token = makeToken(TK_IDENT, lineNo, colNo);
 
-  while (charCodes[currentChar] == CHAR_LETTER || charCodes[currentChar] == CHAR_DIGIT)
+  while (state == 8 || state == 10)
   {
     // add cur character to identifier
     token->string[count] = currentChar;
     count++;
     readChar();
+    if (charCodes[currentChar] != CHAR_LETTER && charCodes[currentChar] != CHAR_DIGIT)
+      state = 9;
   }
-
   // when end string
   token->string[count] = '\0';
 
@@ -103,7 +122,7 @@ Token *readNumber(void)
   int count = 0;
   Token *token = makeToken(TK_NUMBER, lineNo, colNo);
 
-  while (charCodes[currentChar] == CHAR_DIGIT)
+  while (state == 10)
   {
     if (count > 9)
     {
@@ -113,8 +132,10 @@ Token *readNumber(void)
     token->string[count] = currentChar;
     count++;
     readChar();
-  }
 
+    if (charCodes[currentChar] != CHAR_DIGIT)
+      state = 11;
+  }
   token->string[count] = '\0';
   token->value = atoi(token->string);
   return token;
@@ -134,13 +155,14 @@ Token *readConstChar(void)
   {
     switch (charCodes[currentChar])
     {
-    // escape character for single quote
+      // escape character for single quote
     case CHAR_SINGLEQUOTE: // read ''
-      // read next character
+                           // read next character
       readChar();
       int current = 0;
       while (charCodes[currentChar] != CHAR_SINGLEQUOTE && currentChar >= 0x20 && currentChar <= 0x7E) //printable chars
       {
+        state = 35;
         if (current >= MAX_STRING_LEN)
           error(ERR_STRINGTOOLONG, token->lineNo, token->colNo);
         token->string[current++] = currentChar;
@@ -151,6 +173,7 @@ Token *readConstChar(void)
         readChar();
         if (charCodes[currentChar] == CHAR_SINGLEQUOTE) // read ''
         {
+          state = 36;
           token->string[current] = '\0';
           readChar();
           return token;
@@ -164,6 +187,7 @@ Token *readConstChar(void)
       break;
     default:
       // add the character to token string
+      state = 35;
       token->string[0] = currentChar;
       readChar();
       switch (charCodes[currentChar])
@@ -171,6 +195,7 @@ Token *readConstChar(void)
       case CHAR_SINGLEQUOTE:
         /* code */
         //end token
+        state = 36;
         token->string[1] = '\0';
         readChar();
         return token;
@@ -190,156 +215,186 @@ Token *getToken(void)
   Token *token;
 
   if (currentChar == EOF)
+  {
+    state = 37;
     return makeToken(TK_EOF, lineNo, colNo);
+  }
 
   switch (charCodes[currentChar])
   {
   case CHAR_SPACE:
+    state = 1;
     skipBlank();
     return getToken();
   case CHAR_LETTER:
+    state = 8;
     return readIdentKeyword();
   case CHAR_DIGIT:
+    state = 10;
     return readNumber();
   case CHAR_PLUS:
+    state = 12;
     token = makeToken(SB_PLUS, lineNo, colNo);
     readChar();
     return token;
   case CHAR_MINUS:
+    state = 13;
     token = makeToken(SB_MINUS, lineNo, colNo);
     readChar();
     return token;
   case CHAR_TIMES:
     // Token Times
+    state = 14;
     token = makeToken(SB_TIMES, lineNo, colNo);
     readChar();
     return token;
   case CHAR_SLASH:
     // Token Slash
+    state = 15;
     token = makeToken(SB_SLASH, lineNo, colNo);
     readChar();
     return token;
   case CHAR_EQ:
     // Token Equal
+    state = 23;
     token = makeToken(SB_EQ, lineNo, colNo);
     readChar();
     return token;
   case CHAR_COMMA:
     // Token Comma
+    state = 17;
     token = makeToken(SB_COMMA, lineNo, colNo);
     readChar();
     return token;
   case CHAR_SEMICOLON:
     // Token Semicolon
+    state = 18;
     token = makeToken(SB_SEMICOLON, lineNo, colNo);
     readChar();
     return token;
   case CHAR_RPAR:
     // Token Right Parenthesis
+    state = 39;
     token = makeToken(SB_RPAR, lineNo, colNo);
     readChar();
     return token;
 
   case CHAR_LPAR:
-    // empty token
+    state = 2;
     token = makeToken(TK_NONE, lineNo, colNo);
     readChar(); // get next one
     switch (charCodes[currentChar])
     {
     case CHAR_PERIOD:
       // LSEL
+      state = 6;
       token->tokenType = SB_LSEL;
       readChar();
       return token;
-    /* code */
+      /* code */
     case CHAR_TIMES:
       // comment, free the allocated first and skip comment
+      state = 3;
       free(token);
       skipComment();
       return getToken();
     case CHAR_SPACE:
+      state = 7;
       skipBlank();
       token->tokenType = SB_LPAR;
       return token;
     default:
       // Token Left Parenthesis
+      state = 7;
       token->tokenType = SB_LPAR;
       return token;
     }
 
   case CHAR_GT:
     // token greater
+    state = 24;
     token = makeToken(SB_GT, lineNo, colNo);
     readChar();
     // check next token is = or not
     if (charCodes[currentChar] == CHAR_EQ)
     {
+      state = 23;
       token->tokenType = SB_GE;
       readChar();
     }
     return token;
 
   case CHAR_LT:
-
+    state = 25;
     token = makeToken(TK_NONE, lineNo, colNo);
     readChar();
     switch (charCodes[currentChar])
     {
     case CHAR_EQ:
+      state = 26;
       token->tokenType = SB_LE;
       readChar();
       return token;
     default:
+      state = 27;
       token->tokenType = SB_LT;
     }
 
   case CHAR_EXCLAIMATION:
+    state = 28;
     token = makeToken(TK_NONE, lineNo, colNo);
-
     readChar();
     if (charCodes[currentChar] != CHAR_EQ)
     {
+      state = 30;
       error(ERR_INVALIDSYMBOL, token->lineNo, token->colNo);
     }
     else
     {
+      state = 29;
       token->tokenType = SB_NEQ;
       readChar();
     }
     return token;
   case CHAR_PERIOD:
     // Token Period
+    state = 21;
     token = makeToken(SB_PERIOD, lineNo, colNo);
 
     // If next character is Right Parenthesis
     readChar();
     if (charCodes[currentChar] == CHAR_RPAR)
     {
+      state = 20;
       // it is token Right Parenthesis
       token->tokenType = SB_RSEL;
       readChar();
     }
     return token;
   case CHAR_COLON:
-    // Token Semicolon
+    // Token colon
+    state = 33;
     token = makeToken(SB_COLON, lineNo, colNo);
 
     // If next character is Equal
     readChar();
     if (charCodes[currentChar] == CHAR_EQ)
     {
+      state = 32;
       // it is token Assignment
       token->tokenType = SB_ASSIGN;
       readChar();
     }
     return token;
   case CHAR_SINGLEQUOTE:
+    state = 34;
     return readConstChar();
 
     // ....
     // TODO
     // ....
   default:
+    state = 38;
     token = makeToken(TK_NONE, lineNo, colNo);
     error(ERR_INVALIDSYMBOL, lineNo, colNo);
     readChar();
@@ -643,7 +698,7 @@ void printToken(Token *token, int toFile, char *fileName)
 int scan(char *fileName, int toFile, char *fileOutName)
 {
   Token *token;
-
+  state = 0;
   if (openInputStream(fileName) == IO_ERROR)
     return IO_ERROR;
 
