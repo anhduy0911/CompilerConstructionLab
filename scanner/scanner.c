@@ -778,8 +778,8 @@ int main(int argc, char *argv[])
       return -1;
     }
 
-    FILE *fPtr1 = fopen(argv[1], "r");
-    FILE *fPtr2 = fopen(argv[2], "r");
+    FILE *fPtr1 = fopen(argv[3], "r");
+    FILE *fPtr2 = fopen(argv[4], "r");
 
     int line, col;
     int diff = compareFile(fPtr1, fPtr2, &line, &col);

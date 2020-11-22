@@ -1,4 +1,3 @@
 Program Example1; (* Example 1 *)
-Var A: ARRAY(.3.) OF *;
 Begin
 End. (* Example 1 *)
