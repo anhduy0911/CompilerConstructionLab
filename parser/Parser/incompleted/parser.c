@@ -141,27 +141,36 @@ void compileVarDecls(void)
     }
 }
 
-void compileVarDecls2()
-{
-    if (lookAhead->tokenType == SB_COMMA)
-    {
-        eat(SB_COMMA);
-        eat(TK_IDENT);
-        compileVarDecls2();
-    }
-    else if (lookAhead->tokenType == SB_COLON)
-        return;
-    else
-    {
-        missingToken(SB_COMMA, lookAhead->lineNo, lookAhead->colNo);
-    }
-}
+// void compileVarDecls2()
+// {
+//     if (lookAhead->tokenType == SB_COMMA)
+//     {
+//         eat(SB_COMMA);
+//         eat(TK_IDENT);
+//         compileVarDecls2();
+//     }
+//     else if (lookAhead->tokenType == SB_COLON)
+//         return;
+//     else
+//     {
+//         missingToken(SB_COMMA, lookAhead->lineNo, lookAhead->colNo);
+//     }
+// }
+
+// void compileVarDecl(void)
+// {
+//     // TODO
+//     eat(TK_IDENT);
+//     compileVarDecls2();
+//     eat(SB_COLON);
+//     compileType();
+//     eat(SB_SEMICOLON);
+// }
 
 void compileVarDecl(void)
 {
     // TODO
     eat(TK_IDENT);
-    compileVarDecls2();
     eat(SB_COLON);
     compileType();
     eat(SB_SEMICOLON);
