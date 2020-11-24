@@ -1,0 +1,4 @@
+1:../test/example1.kpl:../test/result1.txt
+2:../test/example2.kpl:../test/result2.txt
+3:../test/example3.kpl:../test/result3.txt
+4:../test/example4.kpl:../test/result4.txt
