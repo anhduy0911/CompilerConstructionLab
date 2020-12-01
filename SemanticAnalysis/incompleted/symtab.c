@@ -46,16 +46,44 @@ Type *makeArrayType(int arraySize, Type *elementType)
 Type *duplicateType(Type *type)
 {
   // TODO
+  Type *t = (Type *)malloc(sizeof(Type));
+  t->typeClass = type->typeClass;
+  if (t->typeClass == TP_ARRAY)
+  {
+    t->arraySize = type->arraySize;
+    t->elementType = duplicateType(type->elementType);
+  }
+
+  return t;
 }
 
 int compareType(Type *type1, Type *type2)
 {
   // TODO
+  if (type1->typeClass == type2->typeClass)
+  {
+    if (type1->typeClass == TP_ARRAY)
+    {
+      if (type1->arraySize == type2->arraySize)
+        return compareType(type1->elementType, type2->elementType);
+      else
+        return 0;
+    }
+    else
+      return 1;
+  }
+  else
+    return 0;
 }
 
 void freeType(Type *type)
 {
   // TODO
+  if (type->typeClass == TP_ARRAY)
+  {
+    freeType(type->elementType);
+  }
+  free(type);
 }
 
 /******************* Constant utility ******************************/
@@ -81,6 +109,16 @@ ConstantValue *makeCharConstant(char ch)
 ConstantValue *duplicateConstantValue(ConstantValue *v)
 {
   // TODO
+  ConstantValue *dup = (ConstantValue *)malloc(sizeof(ConstantValue));
+  dup->type = v->type;
+  if (dup->type == TP_INT)
+  {
+    dup->intValue = v->intValue;
+  }
+  else
+    dup->charValue = v->charValue;
+
+  return dup;
 }
 
 /******************* Object utilities ******************************/
@@ -138,36 +176,118 @@ Object *createVariableObject(char *name)
 
 Object *createFunctionObject(char *name)
 {
+  Object *f = (Object *)malloc(sizeof(Object));
+  strcpy(f->name, name);
+  f->kind = OBJ_FUNCTION;
+  f->funcAttrs = (FunctionAttributes *)malloc(sizeof(FunctionAttributes));
+  f->funcAttrs->scope = createScope(f, symtab->currentScope);
+  f->funcAttrs->paramList = NULL;
+
+  return f;
 }
 
 Object *createProcedureObject(char *name)
 {
-  // TODO
+  Object *p = (Object *)malloc(sizeof(Object));
+  strcpy(p->name, name);
+  p->kind = OBJ_PROCEDURE;
+  p->procAttrs = (ProcedureAttributes *)malloc(sizeof(ProcedureAttributes));
+  p->procAttrs->scope = createScope(p, symtab->currentScope);
+  p->procAttrs->paramList = NULL;
+
+  return p;
 }
 
 Object *createParameterObject(char *name, enum ParamKind kind, Object *owner)
 {
-  // TODO
+  Object *p = (Object *)malloc(sizeof(Object));
+  strcpy(p->name, name);
+  p->kind = OBJ_PARAMETER;
+  p->paramAttrs = (ParameterAttributes *)malloc(sizeof(ParameterAttributes));
+  p->paramAttrs->kind = kind;
+  p->paramAttrs->function = owner;
+
+  return p;
 }
 
 void freeObject(Object *obj)
 {
   // TODO
+  switch (obj->kind)
+  {
+  case OBJ_CONSTANT:
+    // printf("OBJ_CONSTANT");
+    free(obj->constAttrs->value);
+    free(obj->constAttrs);
+    break;
+  case OBJ_TYPE:
+    // printf("OBJ_TYPE");
+    freeType(obj->typeAttrs->actualType);
+    free(obj->typeAttrs);
+    break;
+  case OBJ_VARIABLE:
+    // printf("OBJ_VARIABLE");
+    freeType(obj->varAttrs->type);
+    free(obj->varAttrs);
+    break;
+  case OBJ_FUNCTION:
+    // printf("OBJ_FUNCTION");
+    freeReferenceList(obj->funcAttrs->paramList);
+    freeType(obj->funcAttrs->returnType);
+    freeScope(obj->funcAttrs->scope);
+    free(obj->funcAttrs);
+    break;
+  case OBJ_PROCEDURE:
+    // printf("OBJ_PROCEDURE");
+    freeReferenceList(obj->procAttrs->paramList);
+    freeScope(obj->procAttrs->scope);
+    free(obj->procAttrs);
+    break;
+  case OBJ_PROGRAM:
+    // printf("OBJ_PROGRAM");
+    freeScope(obj->progAttrs->scope);
+    free(obj->progAttrs);
+    break;
+  case OBJ_PARAMETER:
+    // printf("OBJ_PARAMETER");
+    freeType(obj->paramAttrs->type);
+    free(obj->paramAttrs);
+  }
+
+  // free(obj);
 }
 
 void freeScope(Scope *scope)
 {
   // TODO
+  freeObjectList(scope->objList);
+  free(scope);
 }
 
 void freeObjectList(ObjectNode *objList)
 {
   // TODO
+  ObjectNode *on = objList;
+  while (on != NULL)
+  {
+    ObjectNode *tmp = on;
+    freeObject(on->object);
+    on = on->next;
+    free(tmp);
+  }
 }
 
 void freeReferenceList(ObjectNode *objList)
 {
   // TODO
+  ObjectNode *on = objList;
+  while (on != NULL)
+  {
+    ObjectNode *tmp = on;
+    freeObject(on->object);
+    on = on->next;
+    free(tmp);
+  }
 }
 
 void addObject(ObjectNode **objList, Object *obj)
@@ -189,6 +309,18 @@ void addObject(ObjectNode **objList, Object *obj)
 Object *findObject(ObjectNode *objList, char *name)
 {
   // TODO
+  while (objList != NULL)
+  {
+    Object *tmp = objList->object;
+    if (strcmp(tmp->name, name) == 0)
+    {
+      return tmp;
+    }
+    else
+      objList = objList->next;
+  }
+
+  return NULL;
 }
 
 /******************* others ******************************/
