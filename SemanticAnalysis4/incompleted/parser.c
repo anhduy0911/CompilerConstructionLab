@@ -585,7 +585,7 @@ void compileArguments(ObjectNode *paramList)
     else
       error(ERR_PARAMETERS_ARGUMENTS_INCONSISTENCY, currentToken->lineNo, currentToken->colNo);
 
-    while (lookAhead->tokenType == SB_COMMA)
+    while (paramList->next != NULL && lookAhead->tokenType != SB_RPAR)
     {
       eat(SB_COMMA);
       paramList = paramList->next;

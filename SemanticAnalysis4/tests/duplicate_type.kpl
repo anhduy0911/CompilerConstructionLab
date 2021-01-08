@@ -1,13 +1,15 @@
 Program ExampleE6; (* #Arguments < #Parameters + Unclosed *)
-   
+Type T = Integer;
 Var n : Integer;
     k : Integer;
 
-Function Sum(a : Integer; b : Integer; s : Integer) : Integer;
+Procedure Sum(a : Integer; b : Integer; s : Integer);
+  Type V = T;
   Begin
     s := a + b;
   End;
 
 Begin
-  Sum(1,2);
+  CALL Sum(1,2,3)
+
 End. (* #Arguments < #Parameters *)
